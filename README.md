@@ -85,7 +85,7 @@ An industry-grade, gamified AI ecosystem designed to guide students and freshers
 
 ### 🔗 Connect with me
 - **GitHub**: [archita9](https://github.com/archita9)
-- **Project Link**: [ai-career-hub]([https://ai-career-app-pzzvgvrfqemwffvcuebgeh.streamlit.app/])
+- **Project Link**: https://ai-career-app-pzzvgvrfqemwffvcuebgeh.streamlit.app
 
 ---
 
