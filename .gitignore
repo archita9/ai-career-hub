@@ -1,0 +1,10 @@
+.gemini/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+database.db
+*.log
+.DS_Store
+tmp/
+分析
