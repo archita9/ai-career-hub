@@ -194,7 +194,7 @@ def dream_quest():
 # =========================
 def launchpad_pro(role):
     st.markdown("# 🚀 Mastery Launchpad (Fresher Pro)")
-    st.write("The 'Plus Factors' that college didn't teach you.")
+    st.write("The 'Plus Factors' that Fresher must know.")
     
     # Hero Card
     st.markdown("""<div style='background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); padding: 30px; border-radius: 12px; margin-bottom: 20px; text-align:center;'>
