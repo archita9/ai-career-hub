@@ -160,9 +160,36 @@ if 'queens' not in st.session_state: st.session_state.queens = [-1] * 4
 # UI
 # =========================
 def apply_theme():
-    is_dark = st.session_state.theme == 'dark'
-    bg, card, text = ("#0f172a", "#1e293b", "#e2e8f0") if is_dark else ("#f1f5f9", "#ffffff", "#0f172a")
-    st.markdown(f"<style>.stApp{{background-color:{bg}; color:{text};}} .main-card{{background:{card}; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:20px; color:{text};}}</style>", unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+            html, body, [class*="css"] {
+                font-family: 'Outfit', sans-serif !important;
+            }
+            .stApp {
+                background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+                color: #f8fafc;
+            }
+            .main-card {
+                background: rgba(30, 41, 59, 0.4);
+                backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+                margin-bottom: 24px;
+                color: #f8fafc;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .main-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+            }
+            a.dynamic-link { color: #38bdf8 !important; text-decoration: none !important; font-weight: 500; }
+            a.dynamic-link:hover { text-decoration: underline !important; color: #bae6fd !important; }
+            .stButton>button { border-radius: 8px; font-weight: 600; transition: all 0.3s ease; }
+        </style>
+    """, unsafe_allow_html=True)
     st.markdown("<div style='position:fixed; top:15px; right:20px; font-size:40px; z-index:1000;'>🐼</div>", unsafe_allow_html=True)
 
 apply_theme()
@@ -211,7 +238,7 @@ def dream_quest():
 # =========================
 def launchpad_pro(role):
     st.markdown("# 🚀 Mastery Launchpad (Fresher Pro)")
-    st.write("The 'Plus Factors' that college didn't teach you.")
+    st.write("The 'Plus Factors' that every fresher needs to know.")
     
     # Hero Card
     st.markdown("""<div style='background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); padding: 30px; border-radius: 12px; margin-bottom: 20px; text-align:center;'>
@@ -260,7 +287,54 @@ def launchpad_pro(role):
 # GAME ZONE
 # =========================
 def game_zone():
+    import requests
     st.markdown("## 🎮 Skill Gaming & Streaks")
+    
+    st.markdown("<div class='main-card'>", unsafe_allow_html=True)
+    st.markdown("### 🐙 GitHub Activity Sync")
+    gh_user_input = st.text_input("Enter your GitHub Username (or profile link) to auto-sync:", key="gh_username_sync")
+    gh_commits_today = False
+    
+    if gh_user_input:
+        # Extract username if the user pastes a full URL
+        gh_user = gh_user_input.strip()
+        if "github.com/" in gh_user:
+            gh_user = gh_user.split("github.com/")[-1].strip("/")
+            gh_user = gh_user.split("/")[0]  # Just take the username part
+            
+        with st.spinner(f"Connecting to GitHub API for @{gh_user}..."):
+            try:
+                res = requests.get(f"https://api.github.com/users/{gh_user}/events/public", timeout=5)
+                if res.status_code == 200:
+                    events = res.json()
+                    today_str = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+                    
+                    push_count = 0
+                    for e in events:
+                        if e.get('type') == 'PushEvent' and e.get('created_at', '').startswith(today_str):
+                            push_count += len(e.get('payload', {}).get('commits', []))
+                    
+                    if push_count > 0:
+                        gh_commits_today = True
+                        st.success(f"Awesome! Verified {push_count} public commits today from **{gh_user}**. 'Git commit' task auto-completed! ✅")
+                    else:
+                        import subprocess
+                        try:
+                            git_out = subprocess.check_output(["git", "log", "--since=midnight", "--oneline"], stderr=subprocess.DEVNULL).decode("utf-8")
+                            local_commits = len([line for line in git_out.strip().split('\n') if line])
+                            if local_commits > 0:
+                                gh_commits_today = True
+                                st.success(f"No public commits found, but verified **{local_commits} local commits** in your current project today! 'Git commit' task auto-completed! ✅")
+                            else:
+                                st.warning(f"No public or local commits found today. (Note: GitHub API only shows public pushes!). Keep coding!")
+                        except Exception:
+                            st.warning(f"No public commits found today for **{gh_user}**. (Note: GitHub API only shows public pushes!). Keep coding!")
+                else:
+                    st.error("Invalid GitHub username or API limit reached.")
+            except:
+                st.error("Failed to connect to GitHub API.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("<div class='main-card'>", unsafe_allow_html=True)
@@ -269,7 +343,13 @@ def game_zone():
         itms = ["Apply to job", "Cold email HR", "Study Theory", "Project work", "Git commit", "LinkedIn post", "Email reading", "Company Search", "Mock Test", "DSA Solve", "Portfolio fix", "Networking"]
         done = 0
         for i, itm in enumerate(itms):
-            if st.checkbox(itm, key=f"streak_{i}"): done += 1
+            is_git_task = (itm == "Git commit")
+            if is_git_task and gh_commits_today:
+                st.checkbox(itm + " 🐙 (Verified)", value=True, key=f"streak_gh_{i}", disabled=True)
+                done += 1
+            else:
+                if st.checkbox(itm, key=f"streak_{i}"):
+                    done += 1
         st.progress(done / len(itms))
         st.write(f"Status: **{done} / {len(itms)}** streak complete")
         if done >= len(itms): 
@@ -329,6 +409,8 @@ def student_hub():
         "🎙️ AI Career Copilot",
         "🕒 Activity History"
     ]
+    if st.session_state.user.get('role') == 'Admin / Developer':
+        pages.append("🛠️ Developer Copilot")
     selection = st.sidebar.radio("Go to:", pages, label_visibility="collapsed")
     st.sidebar.markdown("---")
     
@@ -382,7 +464,8 @@ def student_hub():
         st.markdown(f"## 🛣️ {role} Pathway")
         st.write("### 📚 Recommended Courses (Free & Paid)")
         for crs in ROLE_INFO[role]['courses']:
-            st.markdown(f"<div class='main-card'><b>{crs['name']}</b> ({crs['platform']}) - <i>{crs['type']}</i></div>", unsafe_allow_html=True)
+            search_query = f"{crs['name']} {crs['platform']}".replace(' ', '%20')
+            st.markdown(f"<div class='main-card'><b>{crs['name']}</b> ({crs['platform']}) - <i>{crs['type']}</i> <br><br> <a class='dynamic-link' href='https://www.google.com/search?q={search_query}' target='_blank'>🔗 Go to Course</a></div>", unsafe_allow_html=True)
         
         rm = ROLE_INFO[role]['roadmap']
         cc1, cc2, cc3 = st.columns(3)
@@ -399,7 +482,8 @@ def student_hub():
         for cat, items in LIVE_CONTESTS.items():
             st.subheader(cat)
             for itm in items:
-                st.markdown(f"<div class='main-card'><b>{itm['name']}</b><br>Plus Overview: {itm['plus']}<br>Prizes: {itm['reward']} | Mode: {itm['mode']}</div>", unsafe_allow_html=True)
+                search_query = f"{itm['name']} Hackathon".replace(' ', '%20')
+                st.markdown(f"<div class='main-card'><b>{itm['name']}</b><br>Plus Overview: {itm['plus']}<br>Prizes: {itm['reward']} | Mode: {itm['mode']} <br><br> <a class='dynamic-link' href='https://www.google.com/search?q={search_query}' target='_blank'>🔗 Link to Register</a></div>", unsafe_allow_html=True)
         
         if st.button("✨ Fetch Live AI Contest Recommendations"):
             with st.spinner("Analyzing live tech landscape..."):
@@ -418,7 +502,9 @@ def student_hub():
         f = st.radio("Field Filter:", ["All"] + list(ROLE_INFO.keys()), horizontal=True)
         disp = [i for i in INTERNSHIPS if f == "All" or i['field'] == f]
         st.map(pd.DataFrame(disp))
-        for i in disp: st.markdown(f"<div class='main-card'>{i['role']} @ {i['name']} ({i['city']})</div>", unsafe_allow_html=True)
+        for i in disp: 
+            search_query = f"{i['name']} {i['role']} internship".replace(' ', '%20')
+            st.markdown(f"<div class='main-card'><b>{i['role']} @ {i['name']}</b> ({i['city']}) <br><br> <a class='dynamic-link' href='https://www.linkedin.com/jobs/search/?keywords={search_query}' target='_blank'>🔗 Apply / Search on LinkedIn</a></div>", unsafe_allow_html=True)
         
         if st.button("🚀 Find Live AI Internships (Powered by Groq)"):
             with st.spinner("Searching for top-tier opportunities..."):
@@ -515,6 +601,61 @@ def student_hub():
         except Exception as e:
             st.error("Could not load history. Please initialize the database.")
 
+    elif selection == "🛠️ Developer Copilot":
+        import json
+        c1, c2 = st.columns([4, 1])
+        with c1:
+            st.markdown("## 🛠️ Developer Copilot")
+        with c2:
+            if st.button("➕ New Chat"):
+                st.session_state.dev_messages = []
+                with open('admin_chat.json', 'w') as f:
+                    json.dump([], f)
+                st.rerun()
+
+        st.info("This is an admin-exclusive LLM context that knows the codebase architecture.")
+        try:
+            with open("app.py", "r", encoding="utf-8") as f:
+                code_content = f.read()
+        except:
+            code_content = "Code not available."
+            
+        if 'dev_messages' not in st.session_state: 
+            try:
+                with open('admin_chat.json', 'r') as f:
+                    st.session_state.dev_messages = json.load(f)
+            except:
+                st.session_state.dev_messages = []
+                
+        for message in st.session_state.dev_messages:
+            with st.chat_message(message["role"]): st.markdown(message["content"])
+            
+        if prompt := st.chat_input("Ask about the codebase, architecture, or potential changes..."):
+            st.session_state.dev_messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"): st.markdown(prompt)
+            with st.chat_message("assistant"):
+                with st.spinner("Analyzing project codebase..."):
+                    try:
+                        codebase_context = f"This is the source code of the project:\n\n```python\n{code_content[:6000]}\n```\n... (truncated). Explain code directly to the developer."
+                        
+                        api_messages = [{"role": "system", "content": f"You are a Developer Expert Assistant for the codebase. Answer queries based on the project code provided. Context: {codebase_context}"}]
+                        for m in st.session_state.dev_messages[-10:]:
+                            api_messages.append({"role": m["role"], "content": m["content"]})
+                            
+                        chat_completion = client.chat.completions.create(
+                            messages=api_messages,
+                            model="llama-3.1-8b-instant",
+                        )
+                        resp = chat_completion.choices[0].message.content
+                        st.markdown(resp)
+                        st.session_state.dev_messages.append({"role": "assistant", "content": resp})
+                        
+                        with open('admin_chat.json', 'w') as f:
+                            json.dump(st.session_state.dev_messages, f)
+                            
+                    except Exception as e:
+                        st.error(f"Groq API Error: {str(e)}")
+
 
 # =========================
 # GOOGLE AUTH WIDGET
@@ -566,7 +707,11 @@ def main():
                     db = get_db()
                     u_row = db.execute("SELECT * FROM users WHERE username=?", (u,)).fetchone()
                     if u_row and u_row['password'] == hashlib.sha256(p.encode()).hexdigest():
-                        st.session_state.user = dict(u_row)
+                        user_data = dict(u_row)
+                        # Secret elevation strictly for the creator
+                        if user_data['username'].lower() == "architagoyal7@gmail.com":
+                            user_data['role'] = "Admin / Developer"
+                        st.session_state.user = user_data
                         st.rerun()
                     else: st.error("Access Denied")
                     
@@ -575,7 +720,7 @@ def main():
                 
             with tab_s:
                 st.markdown("<br>", unsafe_allow_html=True)
-                nu = st.text_input("New Username", key="s_u")
+                nu = st.text_input("New Username (or Email address)", key="s_u")
                 nr = st.selectbox("I am a:", ["Student", "HR / Recruiter"], key="s_r")
                 np = st.text_input("Create Password", type="password", key="s_p")
                 
@@ -584,7 +729,9 @@ def main():
                     db = get_db()
                     hashed = hashlib.sha256(np.encode()).hexdigest()
                     try:
-                        db.execute("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)", (nu, hashed, nu, nr))
+                        # Secret elevation during database insertion strictly for creator
+                        final_role = "Admin / Developer" if nu.lower() == "architagoyal7@gmail.com" else nr
+                        db.execute("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)", (nu, hashed, nu, final_role))
                         db.commit()
                         st.success("Welcome aboard! You can now log in.")
                     except: st.error("Username Taken")
