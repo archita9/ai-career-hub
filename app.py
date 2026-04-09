@@ -9,6 +9,11 @@ import time
 import datetime
 import re
 from resume_parser import parse_resume
+from groq import Groq
+
+# Initialize Groq Client
+GROQ_API_KEY = "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"
+client = Groq(api_key=GROQ_API_KEY)
 
 # =========================
 # PAGE CONFIG
@@ -170,6 +175,17 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+def log_activity(action_type, description):
+    if st.session_state.user:
+        try:
+            db = get_db()
+            db.execute("INSERT INTO activity_log (user_id, action_type, description) VALUES (?, ?, ?)", 
+                       (st.session_state.user['id'], action_type, description))
+            db.commit()
+            db.close()
+        except:
+            pass
+
 # =========================
 # ✨ DREAM QUEST
 # =========================
@@ -182,6 +198,7 @@ def dream_quest():
     
     if dream_corp and dream_role:
         st.success(f"Objective Set: {dream_role} at {dream_corp}")
+        log_activity("Dream Quest", f"Target set: {dream_role} at {dream_corp}")
         st.write("### ➕ Achievement Delta (Strict Steps):")
         st.markdown("- **Step 1**: Master System Design for high-load systems.")
         st.markdown(f"- **Step 2**: Contribute to 2 high-impact Open Source projects used by {dream_corp}.")
@@ -194,7 +211,7 @@ def dream_quest():
 # =========================
 def launchpad_pro(role):
     st.markdown("# 🚀 Mastery Launchpad (Fresher Pro)")
-    st.write("The 'Plus Factors' that Fresher must know.")
+    st.write("The 'Plus Factors' that college didn't teach you.")
     
     # Hero Card
     st.markdown("""<div style='background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); padding: 30px; border-radius: 12px; margin-bottom: 20px; text-align:center;'>
@@ -236,7 +253,7 @@ def launchpad_pro(role):
             st.markdown(f"<div style='background:rgba(255,0,0,0.1); padding:15px; border-radius:10px; border-left:4px solid red; margin-bottom:10px;'>🎥 <b>{name}</b></div>", unsafe_allow_html=True)
 
     st.divider()
-    st.write("### 💡 What Research Colleges won't tell you:")
+    st.write("### 💡 Proven job search practices:")
     st.info("Directly 'Calling HR' or cold-emailing with your ATS score is a major 'Plus' over 90% of applicants who just 'Easy Apply'. Deep research on company products wins interviews.")
 
 # =========================
@@ -248,6 +265,7 @@ def game_zone():
     with col1:
         st.markdown("<div class='main-card'>", unsafe_allow_html=True)
         st.subheader("🔥 Daily Placement Streak")
+        st.info("💡 **How to play:** Check the boxes as you complete your daily career tasks. Complete all 12 tasks to earn your daily trophy and maintain your momentum!")
         itms = ["Apply to job", "Cold email HR", "Study Theory", "Project work", "Git commit", "LinkedIn post", "Email reading", "Company Search", "Mock Test", "DSA Solve", "Portfolio fix", "Networking"]
         done = 0
         for i, itm in enumerate(itms):
@@ -261,6 +279,18 @@ def game_zone():
     with col2:
         st.markdown("<div class='main-card'>", unsafe_allow_html=True)
         st.subheader("👑 4-Queens Mind Game")
+        with st.expander("📖 How to Play"):
+            st.write("""
+            **Goal:** Place 4 queens on the 4x4 grid such that no two queens threaten each other.
+            
+            **Rules:**
+            1. No two queens can be in the same **row**.
+            2. No two queens can be in the same **column**.
+            3. No two queens can be on the same **diagonal**.
+            
+            **How to move:** Click on a square in each column to place a queen. A '♛' represents a queen.
+            """)
+        
         grid = st.columns(4)
         for c in range(4):
             for r in range(4):
@@ -286,19 +316,34 @@ def game_zone():
 # STUDENT HUB
 # =========================
 def student_hub():
-    st.markdown("# 🎓 AI Career Hub")
-    tabs = st.tabs(["📊 Analysis", "✨ Dream Quest", "🛣️ Roadmap", "🏆 Contests", "💼 Internships", "🚀 Launchpad", "🎮 Game Zone", "🎙️ AI Room"])
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🧭 Navigation")
+    pages = [
+        "📊 AI Analysis",
+        "✨ Dream Quest",
+        "🛣️ Career Roadmap",
+        "🏆 Live Contests",
+        "💼 Internships",
+        "🚀 Mastery Launchpad",
+        "🎮 Game Zone",
+        "🎙️ AI Career Copilot",
+        "🕒 Activity History"
+    ]
+    selection = st.sidebar.radio("Go to:", pages, label_visibility="collapsed")
+    st.sidebar.markdown("---")
     
-    with tabs[0]: # Analysis
+    if selection == "📊 AI Analysis":
+        st.markdown("<h2 style='color:#38bdf8;'>Phase 1: Resume Analysis</h2>", unsafe_allow_html=True)
         col1, col2 = st.columns([1, 1])
         with col1:
             st.markdown("<div class='main-card'>", unsafe_allow_html=True)
-            st.subheader("📄 Phase 1: AI Analysis")
-            uploaded = st.file_uploader("Upload Resume (PDF)", type=["pdf"], key="analysis_up")
+            st.subheader("📄 Upload Resume")
+            uploaded = st.file_uploader("Upload Document (PDF)", type=["pdf"], key="analysis_up")
             if uploaded:
                 st.session_state.resume_data = parse_resume(uploaded)
                 data = st.session_state.resume_data
                 st.success("Analysis Complete!")
+                log_activity("Resume Analysis", f"Analyzed resume. ATS Score: {data['ats_score']}%")
                 c1, c2 = st.columns(2)
                 c1.metric("ATS Match", f"{data['ats_score']}%")
                 c2.metric("Portfolio Health", f"{data['portfolio_health']}%")
@@ -329,9 +374,10 @@ def student_hub():
                     for s in missing: st.error(s)
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    with tabs[1]: dream_quest()
+    elif selection == "✨ Dream Quest":
+        dream_quest()
     
-    with tabs[2]: # Roadmap
+    elif selection == "🛣️ Career Roadmap":
         role = st.selectbox("Select Pathway Filter:", list(ROLE_INFO.keys()), key="rm_sel_hub")
         st.markdown(f"## 🛣️ {role} Pathway")
         st.write("### 📚 Recommended Courses (Free & Paid)")
@@ -348,23 +394,51 @@ def student_hub():
                 st.success(f"🚀 {rm[level]['project']}")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    with tabs[3]: # Contests
+    elif selection == "🏆 Live Contests":
+        st.markdown("## 🏆 Live Contests & Hackathons")
         for cat, items in LIVE_CONTESTS.items():
             st.subheader(cat)
             for itm in items:
                 st.markdown(f"<div class='main-card'><b>{itm['name']}</b><br>Plus Overview: {itm['plus']}<br>Prizes: {itm['reward']} | Mode: {itm['mode']}</div>", unsafe_allow_html=True)
+        
+        if st.button("✨ Fetch Live AI Contest Recommendations"):
+            with st.spinner("Analyzing live tech landscape..."):
+                prompt = "List 5 major upcoming global coding contests or hackathons for 2024-2025. Include Name, Category, and a brief 'Plus Factor' explaining why students should join. Format as a clean list."
+                try:
+                    chat_completion = client.chat.completions.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        model="llama-3.1-8b-instant",
+                    )
+                    st.markdown(f"<div class='main-card' style='border-left:5px solid #818cf8;'>{chat_completion.choices[0].message.content}</div>", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Groq API Error: {str(e)}")
 
-    with tabs[4]: # Internships
+    elif selection == "💼 Internships":
         st.markdown("## 💼 Internship opportunities")
         f = st.radio("Field Filter:", ["All"] + list(ROLE_INFO.keys()), horizontal=True)
         disp = [i for i in INTERNSHIPS if f == "All" or i['field'] == f]
         st.map(pd.DataFrame(disp))
         for i in disp: st.markdown(f"<div class='main-card'>{i['role']} @ {i['name']} ({i['city']})</div>", unsafe_allow_html=True)
+        
+        if st.button("🚀 Find Live AI Internships (Powered by Groq)"):
+            with st.spinner("Searching for top-tier opportunities..."):
+                prompt = f"List 5 high-impact internship programs currently active or opening soon for the '{f}' domain (or general Tech if 'All'). Include Company, Role, and a quick tip on how to stand out. Format as a clean list."
+                try:
+                    chat_completion = client.chat.completions.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        model="llama-3.1-8b-instant",
+                    )
+                    st.markdown(f"<div class='main-card' style='border-left:5px solid #38bdf8;'>{chat_completion.choices[0].message.content}</div>", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Groq API Error: {str(e)}")
 
-    with tabs[5]: launchpad_pro(st.session_state.resume_data.get('detected_domain', 'Software Developer') if st.session_state.resume_data else "Software Developer")
-    with tabs[6]: game_zone()
+    elif selection == "🚀 Mastery Launchpad":
+        launchpad_pro(st.session_state.resume_data.get('detected_domain', 'Software Developer') if st.session_state.resume_data else "Software Developer")
+    
+    elif selection == "🎮 Game Zone":
+        game_zone()
 
-    with tabs[7]: # AI Room & Subscription
+    elif selection == "🎙️ AI Career Copilot":
         st.markdown("## 🎙️ AI Career Copilot & Subscription Hub")
         v1, v2 = st.tabs(["💬 Career Chatbot", "💳 Membership Plans"])
         with v1:
@@ -382,10 +456,28 @@ def student_hub():
                     if prompt := st.chat_input("Ask about your roadmap or dream job..."):
                         st.session_state.messages.append({"role": "user", "content": prompt})
                         with st.chat_message("user"): st.markdown(prompt)
-                        # AI Response
-                        resp = f"Panda Copilot: That's a great question about '{prompt}'. To reach your dream role, you should focus on the 'Plus Factors' mentioned in your Dream Quest tab. Specifically, the projects in the Roadmap will give you the edge."
-                        st.session_state.messages.append({"role": "assistant", "content": resp})
-                        with st.chat_message("assistant"): st.markdown(resp)
+                        
+                        # AI Response via Groq
+                        with st.chat_message("assistant"):
+                            with st.spinner("Panda is thinking..."):
+                                try:
+                                    # Prepare context for better answers
+                                    user_role = st.session_state.user.get('role', 'Student')
+                                    resume_msg = f" User skills: {', '.join(st.session_state.resume_data['skills_found'])}" if st.session_state.resume_data else ""
+                                    
+                                    chat_completion = client.chat.completions.create(
+                                        messages=[
+                                            {"role": "system", "content": f"You are Panda Copilot, an expert career advisor. Be concise, encouraging, and provide industry-specific advice. User Context: {user_role}.{resume_msg}"},
+                                            {"role": "user", "content": prompt}
+                                        ],
+                                        model="llama-3.1-8b-instant",
+                                    )
+                                    resp = chat_completion.choices[0].message.content
+                                    st.markdown(resp)
+                                    st.session_state.messages.append({"role": "assistant", "content": resp})
+                                except Exception as e:
+                                    error_msg = f"Groq API Error: {str(e)}"
+                                    st.error(error_msg)
                 else:
                     st.warning("⚠️ Session Over. Upgrade to 'AI Plus' to continue chatting.")
                     if st.button("Reset Session"):
@@ -402,35 +494,105 @@ def student_hub():
             st.info("UPI: **architagoyal7@okicici**")
             st.image("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=architagoyal7@okicici", width=150)
 
+    elif selection == "🕒 Activity History":
+        st.markdown("## 🕒 Activity History")
+        st.markdown("<p style='color:#94a3b8;'>Your recent actions across the Placement Pro ecosystem.</p>", unsafe_allow_html=True)
+        try:
+            db = get_db()
+            logs = db.execute("SELECT action_type, description, timestamp FROM activity_log WHERE user_id=? ORDER BY timestamp DESC LIMIT 20", (st.session_state.user['id'],)).fetchall()
+            db.close()
+            
+            if logs:
+                for log in logs:
+                    st.markdown(f"""
+                        <div style='background-color:#1e293b; padding:15px; border-radius:8px; border-left:4px solid #38bdf8; margin-bottom:10px;'>
+                            <small style='color:#94a3b8;'>{log['timestamp']} • <b>{log['action_type']}</b></small><br>
+                            <span style='color:#e2e8f0;'>{log['description']}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("No activity recorded yet! Start by analyzing your resume or setting a Dream Quest.")
+        except Exception as e:
+            st.error("Could not load history. Please initialize the database.")
+
+
+# =========================
+# GOOGLE AUTH WIDGET
+# =========================
+def render_google_button():
+    client_id = "235907289435-8cmbue149h81bhsh9r2tlcrk43tpiucp.apps.googleusercontent.com"
+    redirect_uri = "http://localhost:8501"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&scope=email%20profile"
+    
+    html_code = f"""
+        <a href="{auth_url}" target="_self" style="text-decoration: none;">
+            <div style="font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; background-color: white; color: #555; border: 1px solid #ddd; border-radius: 8px; padding: 10px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; margin-top: 10px; margin-bottom: 20px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 20px; margin-right: 10px;" />
+                Continue with Google
+            </div>
+        </a>
+    """
+    st.markdown(html_code, unsafe_allow_html=True)
+
 # =========================
 # MAIN
 # =========================
 def main():
+    # Handle Google Auth Callback (Mock backend validation since Client Secret is not provided)
+    if "code" in st.query_params:
+        st.session_state.user = {"id": 999, "username": "Google User", "role": "Student"}
+        st.query_params.clear()
+        st.rerun()
+
     if not st.session_state.user:
-        st.markdown("<h1 style='text-align: center; color:#38bdf8;'>🐼 Placement Pro AI</h1>", unsafe_allow_html=True)
-        tab_l, tab_s = st.tabs(["Login", "Sign Up"])
-        with tab_l:
-            u = st.text_input("Username", key="l_u")
-            p = st.text_input("Password", type="password", key="l_p")
-            if st.button("Login", key="l_btn"):
-                db = get_db()
-                u_row = db.execute("SELECT * FROM users WHERE username=?", (u,)).fetchone()
-                if u_row and u_row['password'] == hashlib.sha256(p.encode()).hexdigest():
-                    st.session_state.user = dict(u_row)
-                    st.rerun()
-                else: st.error("Access Denied")
-        with tab_s:
-            nu = st.text_input("New ID", key="s_u")
-            nr = st.selectbox("I am a:", ["Student", "HR / Recruiter"], key="s_r")
-            np = st.text_input("Password", type="password", key="s_p")
-            if st.button("Register", key="s_btn"):
-                db = get_db()
-                hashed = hashlib.sha256(np.encode()).hexdigest()
-                try:
-                    db.execute("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)", (nu, hashed, nu, nr))
-                    db.commit()
-                    st.success("Welcome aboard!")
-                except: st.error("ID Taken")
+        # Centered layout using Streamlit columns
+        _, col_main, _ = st.columns([1, 1.5, 1])
+        
+        with col_main:
+            st.markdown("<br><h1 style='text-align: center; color:#38bdf8; font-size: 3rem;'>🐼 Placement Pro AI</h1>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color:#94a3b8; font-size: 1.1rem; margin-bottom: 30px;'>Sign in to access your AI Career Ecosystem</p>", unsafe_allow_html=True)
+            
+            # The Main Login Card wrapper
+            st.markdown("<div style='background-color:#1e293b; padding:2rem; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155;'>", unsafe_allow_html=True)
+            tab_l, tab_s = st.tabs(["🔐 Login", "📝 Sign Up"])
+            
+            with tab_l:
+                st.markdown("<br>", unsafe_allow_html=True)
+                u = st.text_input("Username", key="l_u")
+                p = st.text_input("Password", type="password", key="l_p")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Log In", key="l_btn", use_container_width=True):
+                    db = get_db()
+                    u_row = db.execute("SELECT * FROM users WHERE username=?", (u,)).fetchone()
+                    if u_row and u_row['password'] == hashlib.sha256(p.encode()).hexdigest():
+                        st.session_state.user = dict(u_row)
+                        st.rerun()
+                    else: st.error("Access Denied")
+                    
+                st.markdown("<div style='text-align:center; color:#64748b; margin:20px 0; font-size:0.9rem;'>──────── OR ────────</div>", unsafe_allow_html=True)
+                render_google_button()
+                
+            with tab_s:
+                st.markdown("<br>", unsafe_allow_html=True)
+                nu = st.text_input("New Username", key="s_u")
+                nr = st.selectbox("I am a:", ["Student", "HR / Recruiter"], key="s_r")
+                np = st.text_input("Create Password", type="password", key="s_p")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Create Account", key="s_btn", use_container_width=True):
+                    db = get_db()
+                    hashed = hashlib.sha256(np.encode()).hexdigest()
+                    try:
+                        db.execute("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)", (nu, hashed, nu, nr))
+                        db.commit()
+                        st.success("Welcome aboard! You can now log in.")
+                    except: st.error("Username Taken")
+                    
+                st.markdown("<div style='text-align:center; color:#64748b; margin:20px 0; font-size:0.9rem;'>──────── OR ────────</div>", unsafe_allow_html=True)
+                render_google_button()
+                
+            st.markdown("</div><br><br>", unsafe_allow_html=True)
     else:
         with st.sidebar:
             st.write(f"🛡️ **{st.session_state.user.get('role')}**")

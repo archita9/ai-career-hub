@@ -28,9 +28,22 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
+    
+    # Create general activity log table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS activity_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action_type TEXT,
+            description TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
 
 if __name__ == "__main__":
     init_db()
