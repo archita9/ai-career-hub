@@ -701,10 +701,10 @@ def student_hub():
 # =========================
 def render_google_button():
     client_id = "235907289435-nhbklhsa8rr75nai60mi5e8cmmteabqf.apps.googleusercontent.com"
-    # Detect if we are on localhost or deployment
-    current_url = st.query_params.get("redirect", "http://localhost:8501")
-    # Using the exact deployment URL provided by the user
-    redirect_uri = "https://ai-career-app-pzzvgvrfqemwffvcuebgeh.streamlit.app" if "streamlit.app" in current_url else "http://localhost:8501"
+    # Reliable detection between Local and Streamlit Cloud
+    is_cloud = os.path.exists("/mount/src")
+    redirect_uri = "https://ai-career-app-pzzvgvrfqemwffvcuebgeh.streamlit.app" if is_cloud else "http://localhost:8501"
+
 
     
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&scope=openid%20email%20profile"
