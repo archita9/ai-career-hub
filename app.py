@@ -707,7 +707,8 @@ def render_google_button():
     redirect_uri = "https://ai-career-app-pzzvgvrfqemwffvcuebgeh.streamlit.app" if "streamlit.app" in current_url else "http://localhost:8501"
 
     
-    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&scope=email%20profile"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&scope=openid%20email%20profile"
+
     
     html_code = f"""
         <a href="{auth_url}" target="_self" style="text-decoration: none;">
