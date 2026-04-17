@@ -11,6 +11,8 @@ import re
 from dotenv import load_dotenv
 from resume_parser import parse_resume
 from groq import Groq
+from init_db import init_db
+
 
 # Load environment variables
 load_dotenv()
@@ -716,7 +718,11 @@ def render_google_button():# test change #test chnage
 # MAIN
 # =========================
 def main():
-    # Handle Google Auth Callback (Mock backend validation since Client Secret is not provided)
+    # Ensure database is initialized (crucial for deployment)
+    init_db()
+    
+    # Handle Google Auth Callback
+
     if "code" in st.query_params:
         st.session_state.user = {"id": 999, "username": "Google User", "role": "Student"}
         st.query_params.clear()
