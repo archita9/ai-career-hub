@@ -20,21 +20,25 @@ load_dotenv()
 # Then RESTART your terminal/IDE for changes to take effect.
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-if not GROQ_API_KEY:
-    st.warning("🔑 Groq API Key is not set!")
-    st.markdown("""
-    ### How to set your key securely:
-    1. Open your terminal (PowerShell or CMD).
-    2. Run the following command:
-       ```bash
-       setx GROQ_API_KEY "your_groq_api_key_here"
-       ```
-    3. **Restart your IDE (VS Code) and terminal** to apply the change.
-    4. Once set, the key will be stored in your system and won't appear in the code!
-    """)
-    client = None
-else:
+if GROQ_API_KEY:
     client = Groq(api_key=GROQ_API_KEY)
+else:
+    client = None
+
+def render_groq_status():
+    if not GROQ_API_KEY:
+        with st.expander("🔑 Groq API Key is not set!", expanded=False):
+            st.markdown("""
+            ### How to set your key securely:
+            1. Open your terminal (PowerShell or CMD).
+            2. Run the following command:
+               ```bash
+               setx GROQ_API_KEY "your_groq_api_key_here"
+               ```
+            3. **Restart your IDE (VS Code) and terminal** to apply the change.
+            4. Once set, the key will be stored in your system and won't appear in the code!
+            """)
+
 
 # =========================
 # PAGE CONFIG
@@ -780,6 +784,10 @@ def main():
                 st.session_state.user = None
                 st.rerun()
         student_hub()
+        with st.sidebar:
+            st.markdown("---")
+            render_groq_status()
+
 
 if __name__ == "__main__":
     main()
