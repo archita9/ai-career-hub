@@ -699,9 +699,13 @@ def student_hub():
 # =========================
 # GOOGLE AUTH WIDGET
 # =========================
-def render_google_button():# test change #test chnage
+def render_google_button():
     client_id = "235907289435-nhbklhsa8rr75nai60mi5e8cmmteabqf.apps.googleusercontent.com"
-    redirect_uri = "http://localhost:8501"
+    # Detect if we are on localhost or deployment
+    current_url = st.query_params.get("redirect", "http://localhost:8501")
+    # For Streamlit Cloud, we usually want the base URL
+    redirect_uri = "https://ai-career-hub.streamlit.app" if "streamlit.app" in current_url else "http://localhost:8501"
+    
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&scope=email%20profile"
     
     html_code = f"""
@@ -713,6 +717,7 @@ def render_google_button():# test change #test chnage
         </a>
     """
     st.markdown(html_code, unsafe_allow_html=True)
+
 
 # =========================
 # MAIN
@@ -763,24 +768,30 @@ def main():
                 
             with tab_s:
                 st.markdown("<br>", unsafe_allow_html=True)
-                nu = st.text_input("New Username (or Email address)", key="s_u")
-                nr = st.selectbox("I am a:", ["Student", "HR / Recruiter"], key="s_r")
-                np = st.text_input("Create Password", type="password", key="s_p")
+                new_user = st.text_input("New Username (or Email address)", key="s_u")
+                new_role = st.selectbox("I am a:", ["Student", "HR / Recruiter"], key="s_r")
+                new_pass = st.text_input("Create Password", type="password", key="s_p")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("Create Account", key="s_btn", use_container_width=True):
-                    db = get_db()
-                    hashed = hashlib.sha256(np.encode()).hexdigest()
-                    try:
-                        # Secret elevation during database insertion strictly for creator
-                        final_role = "Admin / Developer" if nu.lower() == "architagoyal7@gmail.com" else nr
-                        db.execute("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)", (nu, hashed, nu, final_role))
-                        db.commit()
-                        st.success("Welcome aboard! You can now log in.")
-                    except: st.error("Username Taken")
+                    if not new_user or not new_pass:
+                        st.error("Please fill all fields")
+                    else:
+                        db = get_db()
+                        hashed_p = hashlib.sha256(new_pass.encode()).hexdigest()
+                        try:
+                            # Secret elevation strictly for creator
+                            final_r = "Admin / Developer" if new_user.lower() == "architagoyal7@gmail.com" else new_role
+                            db.execute("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)", (new_user, hashed_p, new_user, final_r))
+                            db.commit()
+                            db.close()
+                            st.success("Welcome aboard! You can now log in.")
+                        except Exception as e: 
+                            st.error(f"Error: Username might be taken or DB issue.")
                     
                 st.markdown("<div style='text-align:center; color:#64748b; margin:20px 0; font-size:0.9rem;'>──────── OR ────────</div>", unsafe_allow_html=True)
                 render_google_button()
+
                 
             st.markdown("</div><br><br>", unsafe_allow_html=True)
     else:
