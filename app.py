@@ -660,7 +660,7 @@ def student_hub():
 # =========================
 # GOOGLE AUTH WIDGET
 # =========================
-def render_google_button():# test change
+def render_google_button():# test change #test chnage
     client_id = "235907289435-nhbklhsa8rr75nai60mi5e8cmmteabqf.apps.googleusercontent.com"
     redirect_uri = "http://localhost:8501"
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&scope=email%20profile"
