@@ -8,12 +8,33 @@ import os
 import time
 import datetime
 import re
+from dotenv import load_dotenv
 from resume_parser import parse_resume
 from groq import Groq
 
+# Load environment variables
+load_dotenv()
+
 # Initialize Groq Client
-GROQ_API_KEY = "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"
-client = Groq(api_key=GROQ_API_KEY)
+# To set your key securely via terminal on Windows, run: setx GROQ_API_KEY "your_actual_key"
+# Then RESTART your terminal/IDE for changes to take effect.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not GROQ_API_KEY:
+    st.warning("🔑 Groq API Key is not set!")
+    st.markdown("""
+    ### How to set your key securely:
+    1. Open your terminal (PowerShell or CMD).
+    2. Run the following command:
+       ```bash
+       setx GROQ_API_KEY "your_groq_api_key_here"
+       ```
+    3. **Restart your IDE (VS Code) and terminal** to apply the change.
+    4. Once set, the key will be stored in your system and won't appear in the code!
+    """)
+    client = None
+else:
+    client = Groq(api_key=GROQ_API_KEY)
 
 # =========================
 # PAGE CONFIG
@@ -488,14 +509,17 @@ def student_hub():
         if st.button("✨ Fetch Live AI Contest Recommendations"):
             with st.spinner("Analyzing live tech landscape..."):
                 prompt = "List 5 major upcoming global coding contests or hackathons for 2024-2025. Include Name, Category, and a brief 'Plus Factor' explaining why students should join. Format as a clean list."
-                try:
-                    chat_completion = client.chat.completions.create(
-                        messages=[{"role": "user", "content": prompt}],
-                        model="llama-3.1-8b-instant",
-                    )
-                    st.markdown(f"<div class='main-card' style='border-left:5px solid #818cf8;'>{chat_completion.choices[0].message.content}</div>", unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"Groq API Error: {str(e)}")
+                if not client:
+                    st.error("Groq client not initialized. Please check your API key.")
+                else:
+                    try:
+                        chat_completion = client.chat.completions.create(
+                            messages=[{"role": "user", "content": prompt}],
+                            model="llama-3.1-8b-instant",
+                        )
+                        st.markdown(f"<div class='main-card' style='border-left:5px solid #818cf8;'>{chat_completion.choices[0].message.content}</div>", unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"Groq API Error: {str(e)}")
 
     elif selection == "💼 Internships":
         st.markdown("## 💼 Internship opportunities")
@@ -509,14 +533,17 @@ def student_hub():
         if st.button("🚀 Find Live AI Internships (Powered by Groq)"):
             with st.spinner("Searching for top-tier opportunities..."):
                 prompt = f"List 5 high-impact internship programs currently active or opening soon for the '{f}' domain (or general Tech if 'All'). Include Company, Role, and a quick tip on how to stand out. Format as a clean list."
-                try:
-                    chat_completion = client.chat.completions.create(
-                        messages=[{"role": "user", "content": prompt}],
-                        model="llama-3.1-8b-instant",
-                    )
-                    st.markdown(f"<div class='main-card' style='border-left:5px solid #38bdf8;'>{chat_completion.choices[0].message.content}</div>", unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"Groq API Error: {str(e)}")
+                if not client:
+                    st.error("Groq client not initialized. Please check your API key.")
+                else:
+                    try:
+                        chat_completion = client.chat.completions.create(
+                            messages=[{"role": "user", "content": prompt}],
+                            model="llama-3.1-8b-instant",
+                        )
+                        st.markdown(f"<div class='main-card' style='border-left:5px solid #38bdf8;'>{chat_completion.choices[0].message.content}</div>", unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"Groq API Error: {str(e)}")
 
     elif selection == "🚀 Mastery Launchpad":
         launchpad_pro(st.session_state.resume_data.get('detected_domain', 'Software Developer') if st.session_state.resume_data else "Software Developer")
@@ -546,24 +573,27 @@ def student_hub():
                         # AI Response via Groq
                         with st.chat_message("assistant"):
                             with st.spinner("Panda is thinking..."):
-                                try:
-                                    # Prepare context for better answers
-                                    user_role = st.session_state.user.get('role', 'Student')
-                                    resume_msg = f" User skills: {', '.join(st.session_state.resume_data['skills_found'])}" if st.session_state.resume_data else ""
-                                    
-                                    chat_completion = client.chat.completions.create(
-                                        messages=[
-                                            {"role": "system", "content": f"You are Panda Copilot, an expert career advisor. Be concise, encouraging, and provide industry-specific advice. User Context: {user_role}.{resume_msg}"},
-                                            {"role": "user", "content": prompt}
-                                        ],
-                                        model="llama-3.1-8b-instant",
-                                    )
-                                    resp = chat_completion.choices[0].message.content
-                                    st.markdown(resp)
-                                    st.session_state.messages.append({"role": "assistant", "content": resp})
-                                except Exception as e:
-                                    error_msg = f"Groq API Error: {str(e)}"
-                                    st.error(error_msg)
+                                if not client:
+                                    st.error("Groq client not initialized. Please check your API key.")
+                                else:
+                                    try:
+                                        # Prepare context for better answers
+                                        user_role = st.session_state.user.get('role', 'Student')
+                                        resume_msg = f" User skills: {', '.join(st.session_state.resume_data['skills_found'])}" if st.session_state.resume_data else ""
+                                        
+                                        chat_completion = client.chat.completions.create(
+                                            messages=[
+                                                {"role": "system", "content": f"You are Panda Copilot, an expert career advisor. Be concise, encouraging, and provide industry-specific advice. User Context: {user_role}.{resume_msg}"},
+                                                {"role": "user", "content": prompt}
+                                            ],
+                                            model="llama-3.1-8b-instant",
+                                        )
+                                        resp = chat_completion.choices[0].message.content
+                                        st.markdown(resp)
+                                        st.session_state.messages.append({"role": "assistant", "content": resp})
+                                    except Exception as e:
+                                        error_msg = f"Groq API Error: {str(e)}"
+                                        st.error(error_msg)
                 else:
                     st.warning("⚠️ Session Over. Upgrade to 'AI Plus' to continue chatting.")
                     if st.button("Reset Session"):
@@ -635,26 +665,29 @@ def student_hub():
             with st.chat_message("user"): st.markdown(prompt)
             with st.chat_message("assistant"):
                 with st.spinner("Analyzing project codebase..."):
-                    try:
-                        codebase_context = f"This is the source code of the project:\n\n```python\n{code_content[:6000]}\n```\n... (truncated). Explain code directly to the developer."
-                        
-                        api_messages = [{"role": "system", "content": f"You are a Developer Expert Assistant for the codebase. Answer queries based on the project code provided. Context: {codebase_context}"}]
-                        for m in st.session_state.dev_messages[-10:]:
-                            api_messages.append({"role": m["role"], "content": m["content"]})
+                    if not client:
+                        st.error("Groq client not initialized. Please check your API key.")
+                    else:
+                        try:
+                            codebase_context = f"This is the source code of the project:\n\n```python\n{code_content[:6000]}\n```\n... (truncated). Explain code directly to the developer."
                             
-                        chat_completion = client.chat.completions.create(
-                            messages=api_messages,
-                            model="llama-3.1-8b-instant",
-                        )
-                        resp = chat_completion.choices[0].message.content
-                        st.markdown(resp)
-                        st.session_state.dev_messages.append({"role": "assistant", "content": resp})
-                        
-                        with open('admin_chat.json', 'w') as f:
-                            json.dump(st.session_state.dev_messages, f)
+                            api_messages = [{"role": "system", "content": f"You are a Developer Expert Assistant for the codebase. Answer queries based on the project code provided. Context: {codebase_context}"}]
+                            for m in st.session_state.dev_messages[-10:]:
+                                api_messages.append({"role": m["role"], "content": m["content"]})
+                                
+                            chat_completion = client.chat.completions.create(
+                                messages=api_messages,
+                                model="llama-3.1-8b-instant",
+                            )
+                            resp = chat_completion.choices[0].message.content
+                            st.markdown(resp)
+                            st.session_state.dev_messages.append({"role": "assistant", "content": resp})
                             
-                    except Exception as e:
-                        st.error(f"Groq API Error: {str(e)}")
+                            with open('admin_chat.json', 'w') as f:
+                                json.dump(st.session_state.dev_messages, f)
+                                
+                        except Exception as e:
+                            st.error(f"Groq API Error: {str(e)}")
 
 
 # =========================

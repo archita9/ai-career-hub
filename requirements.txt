@@ -4,3 +4,4 @@ numpy
 scikit-learn
 PyPDF2
 groq
+python-dotenv
